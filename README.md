@@ -3,7 +3,7 @@
 Aplicación interactiva **Shiny** para el análisis y visualización de datos de comercio exterior (exportaciones e importaciones) por sectores económicos, países y regiones.
 
 ## 📊 Visualización
-- 🔗 [Explora el Análisis de Comercio Exterior](https://pabloivanariasneira.shinyapps.io/portfolio/)
+- 🔗 [Explora el Dashboard](https://pabloivanariasneira.shinyapps.io/portfolio/)
 
 ## 🎯 Características
 
