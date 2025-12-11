@@ -93,7 +93,7 @@ ui <- shiny::fluidPage(
   # Título fijo
   shiny::div(
     class = "titulo-fijo",
-    shiny::h2("Portfolio Pablo Iván Arias Neira (Análisis comercio exterior por sectores, países y regiones)")
+    shiny::h2("Análisis comercio exterior por sectores, países y regiones")
   ),
   
   # Contenedor principal
@@ -208,15 +208,16 @@ ui <- shiny::fluidPage(
             shiny::uiOutput("descripcion_sectores"),
             
             # Treemaps sectores
+            shiny::h3("Treemaps"),
             shiny::fluidRow(
               shiny::column(
                 width = 6,
-                shiny::h4("Treemap exportaciones"),
+                shiny::h4("Exportaciones"),
                 plotly::plotlyOutput("treemap_sectores_exp", height = "400px")
               ),
               shiny::column(
                 width = 6,
-                shiny::h4("Treemap Importaciones"),
+                shiny::h4("Importaciones"),
                 plotly::plotlyOutput("treemap_sectores_imp", height = "400px")
               )
             ),
@@ -224,8 +225,43 @@ ui <- shiny::fluidPage(
             shiny::hr(),
             
             # Tabla sectores
-            shiny::h4("Tabla de datos"),
-            DT::DTOutput("tabla_sectores")
+            shiny::h3("Tabla de datos"),
+            DT::DTOutput("tabla_sectores"),
+            
+            shiny::hr(),
+            
+            # Volumen subsectores
+            shiny::h3("Análisis por subsectores"),
+            shiny::h4("Volumen"),
+            shiny::fluidRow(
+              shiny::column(
+                width = 6,
+                shiny::h5("Exportaciones"),
+                plotly::plotlyOutput("vol_subsectores_exp", height = "500px")
+              ),
+              shiny::column(
+                width = 6,
+                shiny::h5("Importaciones"),
+                plotly::plotlyOutput("vol_subsectores_imp", height = "500px")
+              )
+            ),
+            
+            shiny::hr(),
+            
+            # Contribuciones subsectores
+            shiny::h4("Contribución a la tasa de variación"),
+            shiny::fluidRow(
+              shiny::column(
+                width = 6,
+                shiny::h5("Exportaciones"),
+                plotly::plotlyOutput("con_subsectores_exp", height = "500px")
+              ),
+              shiny::column(
+                width = 6,
+                shiny::h5("Importaciones"),
+                plotly::plotlyOutput("con_subsectores_imp", height = "500px")
+              )
+            )
           ),
           
           ##### Tab: Países ----
@@ -239,15 +275,16 @@ ui <- shiny::fluidPage(
             shiny::uiOutput("descripcion_paises"),
             
             # Treemaps países
+            shiny::h3("Treemaps"),
             shiny::fluidRow(
               shiny::column(
                 width = 6,
-                shiny::h4("Treemap exportaciones"),
+                shiny::h4("Exportaciones"),
                 plotly::plotlyOutput("treemap_paises_exp", height = "400px")
               ),
               shiny::column(
                 width = 6,
-                shiny::h4("Treemap importacio"),
+                shiny::h4("Importaciones"),
                 plotly::plotlyOutput("treemap_paises_imp", height = "400px")
               )
             ),
@@ -255,8 +292,43 @@ ui <- shiny::fluidPage(
             shiny::hr(),
             
             # Tabla países
-            shiny::h4("Tabla de Países"),
-            DT::DTOutput("tabla_paises")
+            shiny::h3("Tabla de Países"),
+            DT::DTOutput("tabla_paises"),
+            
+            shiny::hr(),
+            
+            # Volumen países
+            shiny::h3("Análisis por países"),
+            shiny::h4("Volumen"),
+            shiny::fluidRow(
+              shiny::column(
+                width = 6,
+                shiny::h5("Exportaciones"),
+                plotly::plotlyOutput("vol_paises_exp", height = "500px")
+              ),
+              shiny::column(
+                width = 6,
+                shiny::h5("Importaciones"),
+                plotly::plotlyOutput("vol_paises_imp", height = "500px")
+              )
+            ),
+            
+            shiny::hr(),
+            
+            # Contribuciones países
+            shiny::h4("Contribución a la tasa de variación"),
+            shiny::fluidRow(
+              shiny::column(
+                width = 6,
+                shiny::h5("Exportaciones"),
+                plotly::plotlyOutput("con_paises_exp", height = "500px")
+              ),
+              shiny::column(
+                width = 6,
+                shiny::h5("Importaciones"),
+                plotly::plotlyOutput("con_paises_imp", height = "500px")
+              )
+            )
           ),
           
           ##### Tab: Evolución temporal ----

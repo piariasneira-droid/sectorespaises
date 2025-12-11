@@ -304,7 +304,7 @@ tabla_sectores_datacomex <- function(datas, tot, df_sec, parametros) {
     exp_prev = sum(exp_prev, na.rm = TRUE),
     imp      = sum(imp, na.rm = TRUE),
     imp_prev = sum(imp_prev, na.rm = TRUE)
-  ), by = .(orden, nombre, niv)]
+  ), by = .(cod_sec, orden, nombre, niv)]
   
   # CREAR FILA ORDEN 18 (suma de órdenes 19-23)
   fila_18_valores <- df_final[orden %in% c(19, 20, 21, 22, 23), .(
@@ -321,7 +321,8 @@ tabla_sectores_datacomex <- function(datas, tot, df_sec, parametros) {
     exp       = fila_18_valores$exp,
     exp_prev  = fila_18_valores$exp_prev,
     imp       = fila_18_valores$imp,
-    imp_prev  = fila_18_valores$imp_prev
+    imp_prev  = fila_18_valores$imp_prev,
+    cod_sec   = "Z3"
   )
   
   df_final <- rbind(df_final, fila_18, use.names = TRUE)
@@ -367,7 +368,8 @@ tabla_sectores_datacomex <- function(datas, tot, df_sec, parametros) {
     con_exp_reg     = 100 * (exp_subtotal - exp_prev_subtotal) / exp_prev_subtotal,
     con_imp_reg     = 100 * (imp_subtotal - imp_prev_subtotal) / imp_prev_subtotal,
     saldo           = exp_subtotal - imp_subtotal,
-    saldo_prev      = exp_prev_subtotal - imp_prev_subtotal
+    saldo_prev      = exp_prev_subtotal - imp_prev_subtotal,
+    cod_sec         = "Z0"
   )
   
   # Añadir fila total
@@ -392,7 +394,8 @@ tabla_sectores_datacomex <- function(datas, tot, df_sec, parametros) {
     con_exp_reg = 100 * (tot$exp - tot$exp_prev) / tot$exp_prev,
     con_imp_reg = 100 * (tot$imp - tot$imp_prev) / tot$imp_prev,
     saldo       = tot$exp - tot$imp,
-    saldo_prev  = tot$exp_prev - tot$imp_prev
+    saldo_prev  = tot$exp_prev - tot$imp_prev,
+    cod_sec     = "0"
   )
   
   df_final <- rbind(df_final, fila_subtotal, fila_total, use.names = TRUE)
@@ -2293,4 +2296,358 @@ graficas_evolucion_secpais <- function(datas, para){
     df_mensual = df_mensual,
     df_anual = df_anual
   ))
+}
+
+##### Volumenes sub -----
+grafica_volumen_subsectores <- function(df, para, nmax = 8, flujo = "exp") {
+  # Definir colores según si es exportación o importación
+  paleta <- if (flujo == "exp") {
+    c(col1 = "#2d5532", col2 = "#b4d7b4")
+  } else {
+    c(col1 = "#2d3535", col2 = "#b4c7d7")
+  }
+  
+  nombre_flujo <- ifelse(flujo == "exp", "Exportaciones", "Importaciones")
+  col_actual <- flujo
+  col_previo <- paste0(flujo, "_prev")
+  
+  # Filtrar top nmax subsectores
+  df_filtrado <- df[niv >= 2][order(-get(col_actual))][1:min(nmax, .N)]
+  df_filtrado <- df_filtrado[order(-get(col_actual))]
+  df_filtrado[, cod_sec_factor := factor(cod_sec, levels = unique(cod_sec))]
+  
+  # Armar etiquetas dinámicas
+  nombre_actual <- paste0(nombre_flujo, " ", para$ano, " (", para$varud, ")")
+  nombre_previo <- paste0(nombre_flujo, " ", para$ano - 1, " (", para$varud, ")")
+  nombre_diferencia <- paste0("Diferencia absoluta (", para$varud, ")")
+  
+  col_dif <- paste0(flujo, "_dif")
+  col_con <- paste0("con_", flujo)
+  col_tva <- paste0("tva_", flujo)
+  
+  # Textos para los tooltips
+  df_filtrado[, hover_text_actual := paste0(
+    "Subector: ", nombre, "<br>",
+    "Código: ", cod_sec, "<br>",
+    "Región: ", para$nombre_region, "<br>",
+    nombre_actual, ": ", formatear_num(get(col_actual)), "<br>",
+    nombre_diferencia, ": ", format(round(get(col_dif), 1), big.mark = ".", decimal.mark = ",", nsmall = 1), "<br>",
+    "Tasa de variación: ", round(get(col_tva), 1), "%<br>",
+    "Contribución: ", round(get(col_con), 1), " p.p."
+  )]
+  
+  df_filtrado[, hover_text_previo := paste0(
+    nombre_previo, ": ", formatear_num(get(col_previo))
+  )]
+  
+  # Crear gráfico de barras agrupadas
+  fig <- plot_ly() %>%
+    add_bars(
+      data = df_filtrado,
+      x = ~cod_sec_factor,
+      y = ~get(col_actual),
+      name = as.character(para$ano),
+      marker = list(color = paleta["col1"]),
+      customdata = ~hover_text_actual,
+      hovertemplate = '%{customdata}<extra></extra>'
+    ) %>%
+    add_bars(
+      data = df_filtrado,
+      x = ~cod_sec_factor,
+      y = ~get(col_previo),
+      name = as.character(para$ano - 1L),
+      marker = list(color = paleta["col2"]),
+      customdata = ~hover_text_previo,
+      hovertemplate = '%{customdata}<extra></extra>'
+    ) %>%
+    layout(
+      barmode = 'group',
+      xaxis = list(
+        title = "Subsector",
+        tickfont = list(size = 10),
+        showspikes = FALSE
+      ),
+      yaxis = list(
+        title = list(
+          text = paste0(nombre_flujo, " (", para$varud, ")"),
+          standoff = 20
+        ),
+        automargin = TRUE,
+        tickformat = ",.0f"
+      ),
+      margin = list(l = 80, b = 100),
+      showlegend = TRUE,
+      legend = list(
+        orientation = "h",
+        yanchor = "bottom",
+        y = 1.02,
+        xanchor = "right",
+        x = 1
+      ),
+      hovermode = "x unified",
+      hoverdistance = 20
+    )
+  
+  return(fig)
+}
+
+grafica_volumen_paises <- function(df, para, nmax = 8, flujo = "exp") {
+  # Definir colores según si es exportacion o importacion
+  paleta <- if (flujo == "exp") {
+    c(col1 = "#2d5532", col2 = "#b4d7b4")
+  } else {
+    c(col1 = "#2d3535", col2 = "#b4c7d7")
+  }
+  
+  nombre_flujo <- ifelse(flujo == "exp", "Exportaciones", "Importaciones")
+  col_actual <- flujo
+  col_previo <- paste0(flujo, "_prev")
+  
+  # Filtrar top nmax paises
+  df_filtrado <- df[cod >= 1 & cod <= 999][order(-get(col_actual))][1:min(nmax, .N)]
+  df_filtrado <- df_filtrado[order(-get(col_actual))]
+  
+  df_filtrado[, cod_fmt := sprintf("%03d", cod)]
+  df_filtrado[, cod_factor := factor(cod_fmt, levels = unique(cod_fmt))]
+  
+  # Armar etiquetas dinamicas
+  nombre_actual <- paste0(nombre_flujo, " ", para$ano, " (", para$varud, ")")
+  nombre_previo <- paste0(nombre_flujo, " ", para$ano - 1, " (", para$varud, ")")
+  nombre_diferencia <- paste0("Diferencia absoluta (", para$varud, ")")
+  
+  col_dif <- paste0(flujo, "_dif")
+  col_con <- paste0("con_", flujo)
+  col_tva <- paste0("tva_", flujo)
+  
+  # Textos para los tooltips
+  df_filtrado[, hover_text_actual := paste0(
+    "Pais: ", pais, "<br>",
+    "Codigo: ", cod_fmt, "<br>",
+    "Region: ", para$nombre_region, "<br>",
+    nombre_actual, ": ", formatear_num(get(col_actual)), "<br>",
+    nombre_diferencia, ": ", format(round(get(col_dif), 1), big.mark = ".", decimal.mark = ",", nsmall = 1), "<br>",
+    "Tasa de variacion: ", round(get(col_tva), 1), "%<br>",
+    "Contribucion: ", formatear_num(get(col_con)), " p.p."
+  )]
+  
+  df_filtrado[, hover_text_previo := paste0(
+    nombre_previo, ": ", formatear_num(get(col_previo))
+  )]
+  
+  # Crear grafico de barras agrupadas
+  fig <- plot_ly() %>%
+    add_bars(
+      data = df_filtrado,
+      x = ~cod_factor,
+      y = ~get(col_actual),
+      name = as.character(para$ano),
+      marker = list(color = paleta["col1"]),
+      customdata = ~hover_text_actual,
+      hovertemplate = '%{customdata}<extra></extra>'
+    ) %>%
+    add_bars(
+      data = df_filtrado,
+      x = ~cod_factor,
+      y = ~get(col_previo),
+      name = as.character(para$ano - 1L),
+      marker = list(color = paleta["col2"]),
+      customdata = ~hover_text_previo,
+      hovertemplate = '%{customdata}<extra></extra>'
+    ) %>%
+    layout(
+      barmode = 'group',
+      xaxis = list(
+        title = "Pais",
+        tickfont = list(size = 10),
+        showspikes = FALSE
+      ),
+      yaxis = list(
+        title = list(
+          text = paste0(nombre_flujo, " (", para$varud, ")"),
+          standoff = 20
+        ),
+        automargin = TRUE,
+        tickformat = ",.0f"
+      ),
+      margin = list(l = 80, b = 100),
+      showlegend = TRUE,
+      legend = list(
+        orientation = "h",
+        yanchor = "bottom",
+        y = 1.02,
+        xanchor = "right",
+        x = 1
+      ),
+      hovermode = "x unified"
+    )
+  
+  return(fig)
+}
+
+##### Contribuciones sub -----
+grafica_contribuciones_subsectores <- function(df, para, nmax = 8, flujo = "exp") {
+  # Definir colores según si es exportacion o importacion
+  paleta <- if (flujo == "exp") {
+    c(positivo = "#2d5532", negativo = "#b4d7b4")
+  } else {
+    c(positivo = "#2d3535", negativo = "#b4c7d7")
+  }
+  
+  nombre_flujo <- ifelse(flujo == "exp", "Exportaciones", "Importaciones")
+  col_actual <- flujo
+  col_previo <- paste0(flujo, "_prev")
+  col_con <- paste0("con_", flujo)
+  col_dif <- paste0(flujo, "_dif")
+  col_tva <- paste0("tva_", flujo)
+  
+  # Etiquetas dinamicas
+  nombre_actual <- paste0(nombre_flujo, " ", para$ano, " (", para$varud, ")")
+  nombre_previo <- paste0(nombre_flujo, " ", para$ano - 1, " (", para$varud, ")")
+  nombre_diferencia <- paste0("Diferencia absoluta (", para$varud, ")")
+  
+  # Filtrar subsectores
+  df_filtrado <- df[niv >= 2]
+  
+  # Obtener top nmax positivos y nmax negativos
+  df_positivos <- df_filtrado[get(col_con) > 0][order(-get(col_con))][1:min(nmax, .N)]
+  df_negativos <- df_filtrado[get(col_con) < 0][order(get(col_con))][1:min(nmax, .N)]
+  
+  df_plot <- rbind(df_positivos, df_negativos)
+  df_plot <- df_plot[order(get(col_con))]
+  df_plot[, nombre_factor := factor(nombre, levels = unique(nombre))]
+  
+  # Color condicional
+  df_plot[, color := ifelse(get(col_con) > 0, paleta["positivo"], paleta["negativo"])]
+  
+  # Texto con valor de contribucion redondeado a un decimal
+  df_plot[, text_con := format(round(get(col_con), 1), nsmall = 1)]
+  
+  # Textos para los tooltips
+  df_plot[, hover_text := paste0(
+    "Subsector: ", nombre, "<br>",
+    "Region: ", para$nombre_region, "<br>",
+    nombre_actual, ": ", formatear_num(get(col_actual)), "<br>",
+    nombre_previo, ": ", formatear_num(get(col_previo)), "<br>",
+    nombre_diferencia, ": ", format(round(get(col_dif), 1), big.mark = ".", decimal.mark = ",", nsmall = 1), "<br>",
+    "Tasa de variacion: ", round(get(col_tva), 1), "%<br>",
+    "Contribucion: ", round(get(col_con), 1), " p.p."
+  )]
+  
+  # Crear grafico de barras horizontales
+  fig <- plot_ly() %>%
+    add_bars(
+      data = df_plot,
+      y = ~nombre_factor,
+      x = ~get(col_con),
+      orientation = 'h',
+      marker = list(color = ~color),
+      text = ~text_con,
+      textposition = "outside",
+      textfont = list(color = "black", size = 11),
+      customdata = ~hover_text,
+      hovertemplate = '%{customdata}<extra></extra>',
+      showlegend = FALSE
+    ) %>%
+    layout(
+      xaxis = list(
+        title = paste0("Contribucion a ", nombre_flujo, " (p.p.)"),
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black",
+        automargin = TRUE
+      ),
+      yaxis = list(
+        title = "",
+        tickfont = list(size = 10),
+        automargin = TRUE
+      ),
+      hovermode = "closest"
+    )
+  
+  return(fig)
+}
+
+grafica_contribuciones_paises <- function(df, para, nmax = 8, flujo = "exp") {
+  # Definir colores según si es exportacion o importacion
+  paleta <- if (flujo == "exp") {
+    c(positivo = "#2d5532", negativo = "#b4d7b4")
+  } else {
+    c(positivo = "#2d3535", negativo = "#b4c7d7")
+  }
+  
+  nombre_flujo <- ifelse(flujo == "exp", "Exportaciones", "Importaciones")
+  col_actual <- flujo
+  col_previo <- paste0(flujo, "_prev")
+  col_con <- paste0("con_", flujo)
+  col_dif <- paste0(flujo, "_dif")
+  col_tva <- paste0("tva_", flujo)
+  
+  # Etiquetas dinamicas
+  nombre_actual <- paste0(nombre_flujo, " ", para$ano, " (", para$varud, ")")
+  nombre_previo <- paste0(nombre_flujo, " ", para$ano - 1, " (", para$varud, ")")
+  nombre_diferencia <- paste0("Diferencia absoluta (", para$varud, ")")
+  
+  # Filtrar paises
+  df_filtrado <- df[cod >= 1 & cod <= 999]
+  
+  # Obtener top nmax positivos y nmax negativos
+  df_positivos <- df_filtrado[get(col_con) > 0][order(-get(col_con))][1:min(nmax, .N)]
+  df_negativos <- df_filtrado[get(col_con) < 0][order(get(col_con))][1:min(nmax, .N)]
+  
+  df_plot <- rbind(df_positivos, df_negativos)
+  df_plot <- df_plot[order(get(col_con))]
+  
+  # Formatear codigo con 3 digitos
+  df_plot[, cod_fmt := sprintf("%03d", cod)]
+  df_plot[, pais_factor := factor(pais, levels = unique(pais))]
+  
+  # Color condicional
+  df_plot[, color := ifelse(get(col_con) > 0, paleta["positivo"], paleta["negativo"])]
+  
+  # Texto con valor de contribucion redondeado a un decimal
+  df_plot[, text_con := format(round(get(col_con), 1), nsmall = 1)]
+  
+  # Textos para los tooltips
+  df_plot[, hover_text := paste0(
+    "Pais: ", pais, "<br>",
+    "Region: ", para$nombre_region, "<br>",
+    nombre_actual, ": ", formatear_num(get(col_actual)), "<br>",
+    nombre_previo, ": ", formatear_num(get(col_previo)), "<br>",
+    nombre_diferencia, ": ", format(round(get(col_dif), 1), big.mark = ".", decimal.mark = ",", nsmall = 1), "<br>",
+    "Tasa de variacion: ", round(get(col_tva), 1), "%<br>",
+    "Contribucion: ", round(get(col_con), 1), " p.p."
+  )]
+  
+  # Crear grafico de barras horizontales
+  fig <- plot_ly() %>%
+    add_bars(
+      data = df_plot,
+      y = ~pais_factor,
+      x = ~get(col_con),
+      orientation = 'h',
+      marker = list(color = ~color),
+      text = ~text_con,
+      textposition = "outside",
+      textfont = list(color = "black", size = 11),
+      customdata = ~hover_text,
+      hovertemplate = '%{customdata}<extra></extra>',
+      showlegend = FALSE
+    ) %>%
+    layout(
+      xaxis = list(
+        title = paste0("Contribucion a ", nombre_flujo, " (p.p.)"),
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black",
+        automargin = TRUE
+      ),
+      yaxis = list(
+        title = "",
+        tickfont = list(size = 10),
+        automargin = TRUE
+      ),
+      hovermode = "closest"
+    )
+  
+  return(fig)
 }

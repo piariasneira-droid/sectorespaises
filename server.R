@@ -1,4 +1,3 @@
-#### SERVER ----
 server <- function(input, output, session) {
   
   #### Reactive: Parámetros basados en filtros ----
@@ -48,17 +47,6 @@ server <- function(input, output, session) {
       datas      = dataset_react(),
       tot        = totales_react(),
       df_paises  = df_pais,
-      parametros = parametros_react()
-    )
-  })
-  
-  #### Reactive: Treemap Sectores ----
-  df_treemap_sectores_react <- shiny::reactive({
-    shiny::req(dataset_react(), totales_react(), parametros_react())
-    treemap_data(
-      datas      = dataset_react(),
-      tot        = totales_react(),
-      df_sec     = df_sectores,
       parametros = parametros_react()
     )
   })
@@ -122,8 +110,110 @@ server <- function(input, output, session) {
     )
   }, server = FALSE)
   
-  #### OUTPUTS: Treemaps Sectores ----
+  #### OUTPUTS: Volumen Subsectores ----
   
+  ##### Volumen Subsectores Exportaciones ----
+  output$vol_subsectores_exp <- plotly::renderPlotly({
+    shiny::req(df_tabla_sectores_react())
+    
+    grafica_volumen_subsectores(
+      df = df_tabla_sectores_react(),
+      para = parametros_react(),
+      nmax = 8,
+      flujo = "exp"
+    )
+  })
+  
+  ##### Volumen Subsectores Importaciones ----
+  output$vol_subsectores_imp <- plotly::renderPlotly({
+    shiny::req(df_tabla_sectores_react())
+    
+    grafica_volumen_subsectores(
+      df = df_tabla_sectores_react(),
+      para = parametros_react(),
+      nmax = 8,
+      flujo = "imp"
+    )
+  })
+  
+  #### OUTPUTS: Contribuciones Subsectores ----
+  
+  ##### Contribuciones Subsectores Exportaciones ----
+  output$con_subsectores_exp <- plotly::renderPlotly({
+    shiny::req(df_tabla_sectores_react())
+    
+    grafica_contribuciones_subsectores(
+      df = df_tabla_sectores_react(),
+      para = parametros_react(),
+      nmax = 4,
+      flujo = "exp"
+    )
+  })
+  
+  ##### Contribuciones Subsectores Importaciones ----
+  output$con_subsectores_imp <- plotly::renderPlotly({
+    shiny::req(df_tabla_sectores_react())
+    
+    grafica_contribuciones_subsectores(
+      df = df_tabla_sectores_react(),
+      para = parametros_react(),
+      nmax = 4,
+      flujo = "imp"
+    )
+  })
+  
+  #### OUTPUTS: Volumen Países ----
+  
+  ##### Volumen Países Exportaciones ----
+  output$vol_paises_exp <- plotly::renderPlotly({
+    shiny::req(df_tabla_paises_react())
+    
+    grafica_volumen_paises(
+      df = df_tabla_paises_react(),
+      para = parametros_react(),
+      nmax = 8,
+      flujo = "exp"
+    )
+  })
+  
+  ##### Volumen Países Importaciones ----
+  output$vol_paises_imp <- plotly::renderPlotly({
+    shiny::req(df_tabla_paises_react())
+    
+    grafica_volumen_paises(
+      df = df_tabla_paises_react(),
+      para = parametros_react(),
+      nmax = 8,
+      flujo = "imp"
+    )
+  })
+  
+  #### OUTPUTS: Contribuciones Países ----
+  ##### Contribuciones Países Exportaciones ----
+  output$con_paises_exp <- plotly::renderPlotly({
+    shiny::req(df_tabla_paises_react())
+    
+    grafica_contribuciones_paises(
+      df = df_tabla_paises_react(),
+      para = parametros_react(),
+      nmax = 4,
+      flujo = "exp"
+    )
+  })
+  
+  ##### Contribuciones Países Importaciones ----
+  output$con_paises_imp <- plotly::renderPlotly({
+    shiny::req(df_tabla_paises_react())
+    
+    grafica_contribuciones_paises(
+      df = df_tabla_paises_react(),
+      para = parametros_react(),
+      nmax = 4,
+      flujo = "imp"
+    )
+  })
+  
+  #### OUTPUTS: Treemaps Sectores ----
   ##### Treemap Exportaciones Sectores ----
   output$treemap_sectores_exp <- plotly::renderPlotly({
     shiny::req(df_tabla_sectores_react())
@@ -242,7 +332,9 @@ server <- function(input, output, session) {
                        "El tamaño de cada rectángulo representa el volumen comercial. ",
                        "Se incluye una escala de color con el valor de la contribución a la tasa de variación del total de la región."),
         shiny::tags$li(shiny::strong("Tabla de datos:"), " Detalle numérico con valores absolutos, porcentajes y variaciones interanuales por sector. ",
-                       "Se puede desglosar por subsectores.")
+                       "Se puede desglosar por subsectores."),
+        shiny::tags$li(shiny::strong("Análisis por subsectores:"), " Desagregación adicional que permite examinar el volumen comercial ",
+                       "y la contribución a la tasa de variación de los subsectores más relevantes, tanto en exportaciones como importaciones.")
       ),
       
       shiny::p(style = "margin-bottom: 0; font-style: italic; color: #666;",
@@ -262,61 +354,64 @@ server <- function(input, output, session) {
     )
   })
   
-  output$descripcion_paises <- renderUI({
-    div(
+  output$descripcion_paises <- shiny::renderUI({
+    shiny::div(
       class = "descripcion-tab",
-      h5(icon("info-circle"), " Análisis por Países y Regiones"),
+      shiny::h5(shiny::icon("info-circle"), " Análisis por Países y Regiones"),
       
-      p("Esta sección muestra la ", strong("distribución geográfica del comercio exterior"), 
-        " para el sector y período seleccionados."),
+      shiny::p("Esta sección muestra la ", shiny::strong("distribución geográfica del comercio exterior"), 
+               " para la región y período seleccionados, filtrando por el sector especificado."),
       
       # Parámetros dinámicos
-      div(
+      shiny::div(
         style = "background-color: #e8f4f8; padding: 12px 15px; border-radius: 5px; margin: 15px 0;",
-        h6(icon("filter"), " Parámetros seleccionados:", 
-           style = "margin: 0 0 10px 0; color: #2c3e50;"),
-        div(
+        shiny::h6(shiny::icon("filter"), " Parámetros seleccionados:", 
+                  style = "margin: 0 0 10px 0; color: #2c3e50;"),
+        shiny::div(
           style = "display: flex; flex-wrap: wrap; gap: 10px;",
-          span(
+          shiny::span(
             style = "background-color: #3498db; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px;",
-            icon("map-marker-alt"), " Territorio: ", strong(parametros_react()$nombre_region)
+            shiny::icon("map-marker-alt"), " Territorio: ", shiny::strong(parametros_react()$nombre_region)
           ),
-          span(
+          shiny::span(
             style = "background-color: #9b59b6; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px;",
-            icon("calendar-alt"), " Período: ", strong(paste0(
-              toupper(substr(tolower(parametros_react()$texto_periodo), 1, 1)),
-              substr(tolower(parametros_react()$texto_periodo), 2, nchar(parametros_react()$texto_periodo)),
+            shiny::icon("calendar-alt"), " Período: ", shiny::strong(base::paste0(
+              base::toupper(base::substr(base::tolower(parametros_react()$texto_periodo), 1, 1)),
+              base::substr(base::tolower(parametros_react()$texto_periodo), 2, base::nchar(parametros_react()$texto_periodo)),
               " ", parametros_react()$ano))
           ),
-          span(
+          shiny::span(
             style = "background-color: #e67e22; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px;",
-            icon("industry"), " Sector: ", strong(parametros_react()$nombre_sector)
+            shiny::icon("industry"), " Sector: ", shiny::strong(parametros_react()$nombre_sector)
           )
         )
       ),
       
-      p("A continuación se muestra:"),
-      tags$ul(
-        tags$li(strong("Treemaps:"), " Representación visual de los principales socios comerciales. ",
-                "Cada rectángulo representa un país o región, y su tamaño es proporcional al volumen de intercambio."),
-        tags$li(strong("Tabla de regiones/países:"), " Ranking detallado con cifras de exportación, importación, ",
-                "saldo comercial y contribuciones por destino/origen. La regiones se despliegan mostrando los principales
-                socios comerciales de la región")
+      shiny::p("A continuación se muestra:"),
+      shiny::tags$ul(
+        shiny::tags$li(shiny::strong("Treemaps:"), " Representación visual de los principales socios comerciales. ",
+                       "Cada rectángulo representa un país o región, y su tamaño es proporcional al volumen de intercambio. ",
+                       "La escala de color indica la contribución a la tasa de variación."),
+        shiny::tags$li(shiny::strong("Tabla de datos:"), " Ranking detallado con cifras de exportación, importación, ",
+                       "saldo comercial y contribuciones por destino/origen. Las regiones se despliegan mostrando los principales ",
+                       "socios comerciales."),
+        shiny::tags$li(shiny::strong("Análisis por países:"), " Desagregación que permite examinar el volumen comercial ",
+                       "y la contribución a la tasa de variación de los principales países, tanto en exportaciones como importaciones.")
       ),
       
-      p(style = "margin-bottom: 0; font-style: italic; color: #666;",
-        "💡 Tip: Utiliza el selector de país en el panel lateral para filtrar por un socio comercial específico o por agrupaciones regionales."),
+      shiny::p(style = "margin-bottom: 0; font-style: italic; color: #666;",
+               "💡 Tip: Utiliza el selector de país en el panel lateral para filtrar por un socio comercial específico o por agrupaciones regionales."),
       
-      p(style = "margin-top: 10px; font-size: 12px; color: #888; border-top: 1px dashed #ccc; padding-top: 10px;",
-        icon("check-circle"), strong(" Comprobación de datos: "), 
-        "Seleccionando España, el período correspondiente y los totales para país y sector, ",
-        "la tabla de datos debería coincidir con la publicada en los ",
-        tags$a(href = "https://comercio.gob.es/importacionexportacion/informes_estadisticas/paginas/informes-periodicos.aspx",
-               target = "_blank", "informes mensuales de comercio exterior"),
-        " del Ministerio de Economía, Comercio y Empresa. ",
-        tags$a(href = "https://comercio.gob.es/ImportacionExportacion/Informes_Estadisticas/Documents/informe-mensual/Informe-Mensual-de-Comercio-Exterior-ultimo-periodo.pdf",
-               target = "_blank", style = "color: #3c8dbc;",
-               icon("file-pdf"), " Acceso al último informe")
+      shiny::p(style = "margin-top: 10px; font-size: 12px; color: #888; border-top: 1px dashed #ccc; padding-top: 10px;",
+               shiny::icon("check-circle"), shiny::strong(" Comprobación de datos: "), 
+               "Seleccionando España, el período correspondiente y los totales para país y sector, ",
+               "la tabla de datos debería coincidir con la publicada en los ",
+               shiny::tags$a(href = "https://comercio.gob.es/importacionexportacion/informes_estadisticas/paginas/informes-periodicos.aspx", 
+                             target = "_blank", "informes mensuales de comercio exterior"),
+               " del Ministerio de Economía, Comercio y Empresa. ",
+               shiny::tags$a(href = "https://comercio.gob.es/ImportacionExportacion/Informes_Estadisticas/Documents/informe-mensual/Informe-Mensual-de-Comercio-Exterior-ultimo-periodo.pdf",
+                             target = "_blank", style = "color: #3c8dbc;",
+                             shiny::icon("file-pdf"), " Acceso al último informe")
       )
     )
   })
@@ -343,7 +438,7 @@ server <- function(input, output, session) {
           span(style = "background-color: #3498db; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px;",
                icon("map-marker-alt"), " Territorio: ", strong(parametros_react()$nombre_region)),
           span(style = "background-color: #9b59b6; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px;",
-               icon("calendar-alt"), " Meses incluidos: ", strong(parametros_react()$nombre_meses)),
+               icon("calendar-alt"), " Meses incluidos: ", strong(parametros_react()$texto_meses)),
           span(style = "background-color: #27ae60; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px;",
                icon("globe"), " País/Zona: ", strong(parametros_react()$nombre_pais)),
           span(style = "background-color: #e67e22; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px;",
