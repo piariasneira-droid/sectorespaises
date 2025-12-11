@@ -2,6 +2,9 @@
 
 Aplicación interactiva **Shiny** para el análisis y visualización de datos de comercio exterior (exportaciones e importaciones) por sectores económicos, países y regiones.
 
+## 📊 Visualización
+- 🔗 [Explora el Análisis de Comercio Exterior](https://pabloivanariasneira.shinyapps.io/portfolio/)
+
 ## 🎯 Características
 
 - **Treemaps interactivos**: Visualización proporcional del volumen comercial y contribuciones a la tasa de variación
@@ -33,5 +36,3 @@ Aplicación interactiva **Shiny** para el análisis y visualización de datos de
 ## 📄 Licencia
 
 Uso interno
-
----
